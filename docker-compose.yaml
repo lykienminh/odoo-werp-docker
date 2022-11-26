@@ -1,0 +1,44 @@
+version: '3.3'
+services:
+  postgres:
+    image: postgres:13
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=odoo
+      - POSTGRES_PASSWORD=odoo
+
+  odoo:
+    image: werp
+    command: start
+    ports:
+      - 8069:8069
+    links:
+      - postgres:db
+    environment:
+      - ODOO_DB_HOST=db
+      - ODOO_DB_USER=odoo
+      - ODOO_DB_PASSWORD=odoo
+      - ODOO_DB_NAME=odoo-werp
+
+# version: '3.1'
+# services:
+#   web:
+#     image: werp
+#     command: start
+#     depends_on:
+#       - mydb
+#     ports:
+#       - "8069:8069"
+#     environment:
+#     - HOST=mydb
+#     - USER=odoo
+#     - ODOO_ADMIN_PASSWD=admin
+#     - PASSWORD=odoo
+#   mydb:
+#     image: postgres:13
+#     environment:
+#       - POSTGRES_HOST_AUTH_METHOD=trust
+#       - POSTGRES_DB=postgres
+#       - POSTGRES_USER=odoo
+#       - POSTGRES_PASSWORD=odoo

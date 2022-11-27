@@ -1,10 +1,8 @@
 FROM ubuntu:20.04
-MAINTAINER Elico Corp <webmaster@elico-corp.com>
 
 # Define build constants
-ENV GIT_BRANCH=master \
-  PYTHON_BIN=python3 \
-  SERVICE_BIN=odoo-bin
+ENV PYTHON_BIN=python3 \
+    SERVICE_BIN=odoo-bin
 
 # Set timezone to UTC
 RUN ln -sf /usr/share/zoneinfo/Etc/UTC /etc/localtime
@@ -14,6 +12,35 @@ RUN apt update \
   && apt -yq install locales \
   && locale-gen en_US.UTF-8 \
   && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+
+# Install some deps, lessc and less-plugin-clean-css, and wkhtmltopdf
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        dirmngr \
+        fonts-noto-cjk \
+        gnupg \
+        libssl-dev \
+        node-less \
+        npm \
+        python3-num2words \
+        python3-pdfminer \
+        python3-pip \
+        python3-phonenumbers \
+        python3-pyldap \
+        python3-qrcode \
+        python3-renderpm \
+        python3-setuptools \
+        python3-slugify \
+        python3-vobject \
+        python3-watchdog \
+        python3-xlrd \
+        python3-xlwt \
+        libpq-dev \
+        python3-dev \
+        xz-utils \
+        python3-pypdf2
 
 # Install APT dependencies
 ADD sources/apt.txt /opt/sources/apt.txt
@@ -31,29 +58,34 @@ USER odoo
 # instead of odoo! Hence the "RUN /bin/bash -c" trick.
 RUN /bin/bash -c "mkdir -p /opt/odoo/{etc,sources/odoo,additional_addons,data,ssh}"
 
+USER 0
+
 # Add Odoo sources and remove .git folder in order to reduce image size
 WORKDIR /opt/odoo/sources
-RUN git clone --depth=1 https://github.com/odoo/odoo.git -b $GIT_BRANCH \
-  && rm -rf odoo/.git
+COPY /odoo-werp /opt/odoo/sources/odoo
+RUN rm -rf odoo/.git
 
 ADD sources/odoo.conf /opt/odoo/etc/odoo.conf
 ADD auto_addons /opt/odoo/auto_addons
 
-User 0
+RUN apt-get update -y
+RUN apt-get install -y gcc build-essential
 
 # Install Odoo python dependencies
-RUN pip3 install -r /opt/odoo/sources/odoo/requirements.txt
+RUN pip3 install --upgrade pip && pip3 install Jinja2 MarkupSafe setuptools wheel
 
 # Install extra python dependencies
 ADD sources/pip.txt /opt/sources/pip.txt
 RUN pip3 install -r /opt/sources/pip.txt
+ADD sources/requirements.txt /opt/sources/requirements.txt
+RUN pip3 install -r /opt/sources/requirements.txt -e /opt/odoo/sources/odoo
 
 # Install wkhtmltopdf based on QT5
-ADD https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.focal_amd64.deb \
-  /opt/sources/wkhtmltox.deb
-RUN apt update \
-  && apt install -yq xfonts-base xfonts-75dpi \
-  && dpkg -i /opt/sources/wkhtmltox.deb
+# ADD https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.focal_amd64.deb \
+#   /opt/sources/wkhtmltox.deb
+# RUN apt update \
+#   && apt install -yq xfonts-base xfonts-75dpi \
+#   && dpkg -i /opt/sources/wkhtmltox.deb
 
 # Install postgresql-client
 RUN apt update && apt install -yq lsb-release
@@ -68,14 +100,6 @@ ADD sources/startup.sh /opt/scripts/startup.sh
 # must run before creating the volumes since they become readonly until the
 # container is started.
 RUN chmod -R 775 /opt/odoo && chown -R odoo:odoo /opt/odoo
-
-VOLUME [ \
-  "/opt/odoo/etc", \
-  "/opt/odoo/additional_addons", \
-  "/opt/odoo/data", \
-  "/opt/odoo/ssh", \
-  "/opt/scripts" \
-]
 
 # Use README for the help & man commands
 ADD README.md /usr/share/man/man.txt
@@ -93,6 +117,7 @@ RUN from=$( awk '/^## Usage/{ print NR; exit }' /usr/share/man/man.txt ) && \
 
 # Use dumb-init as init system to launch the boot script
 ADD https://github.com/Yelp/dumb-init/releases/download/v1.2.0/dumb-init_1.2.0_amd64.deb /opt/sources/dumb-init.deb
+# ADD https://github.com/Yelp/dumb-init/releases/download/v1.2.5/dumb-init_1.2.5_arm64.deb /opt/sources/dumb-init.deb
 RUN dpkg -i /opt/sources/dumb-init.deb
 ADD bin/boot /usr/bin/boot
 ENTRYPOINT [ "/usr/bin/dumb-init", "/usr/bin/boot" ]

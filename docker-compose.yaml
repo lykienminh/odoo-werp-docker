@@ -1,0 +1,48 @@
+version: '3.3'
+services:
+  postgres:
+    image: postgres:13
+    # ports:
+    #   - 8432:5432
+    command: -p 8432
+    environment:
+      - POSTGRES_USER=odoo
+      - POSTGRES_PASSWORD=odoo
+
+  odoo:
+    image: lykienminh/odoo-werp:15.0
+    # command: python3 odoo/odoo-bin -d odoo-werp --db_host db --db_user odoo --db_password odoo --db_port 8432
+    command: start
+    restart: always
+    ports:
+      - 8069:8069
+    links:
+      - postgres:db
+    environment:
+      - ODOO_DB_HOST=db
+      - ODOO_DB_PORT=8432
+      - ODOO_DB_USER=odoo
+      - ODOO_DB_PASSWORD=odoo
+      - ODOO_DB_NAME=odoo-werp
+
+# version: '3.1'
+# services:
+#   web:
+#     image: werp
+#     command: start
+#     depends_on:
+#       - mydb
+#     ports:
+#       - "8069:8069"
+#     environment:
+#     - HOST=mydb
+#     - USER=odoo
+#     - ODOO_ADMIN_PASSWD=admin
+#     - PASSWORD=odoo
+#   mydb:
+#     image: postgres:13
+#     environment:
+#       - POSTGRES_HOST_AUTH_METHOD=trust
+#       - POSTGRES_DB=postgres
+#       - POSTGRES_USER=odoo
+#       - POSTGRES_PASSWORD=odoo

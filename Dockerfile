@@ -14,34 +14,6 @@ RUN apt update \
   && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
 
 # Install some deps, lessc and less-plugin-clean-css, and wkhtmltopdf
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        ca-certificates \
-        curl \
-        dirmngr \
-        fonts-noto-cjk \
-        gnupg \
-        libssl-dev \
-        node-less \
-        npm \
-        python3-num2words \
-        python3-pdfminer \
-        python3-pip \
-        python3-phonenumbers \
-        python3-pyldap \
-        python3-qrcode \
-        python3-renderpm \
-        python3-setuptools \
-        python3-slugify \
-        python3-vobject \
-        python3-watchdog \
-        python3-xlrd \
-        python3-xlwt \
-        libpq-dev \
-        python3-dev \
-        xz-utils \
-        python3-pypdf2
-
 # Install APT dependencies
 ADD sources/apt.txt /opt/sources/apt.txt
 RUN apt update \
@@ -72,7 +44,7 @@ RUN apt-get update -y
 RUN apt-get install -y gcc build-essential
 
 # Install Odoo python dependencies
-RUN pip3 install --upgrade pip && pip3 install Jinja2 MarkupSafe setuptools wheel
+RUN pip3 install --upgrade pip && pip3 install setuptools wheel
 
 # Install extra python dependencies
 ADD sources/pip.txt /opt/sources/pip.txt
@@ -81,11 +53,10 @@ ADD sources/requirements.txt /opt/sources/requirements.txt
 RUN pip3 install -r /opt/sources/requirements.txt -e /opt/odoo/sources/odoo
 
 # Install wkhtmltopdf based on QT5
-# ADD https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.focal_amd64.deb \
-#   /opt/sources/wkhtmltox.deb
-# RUN apt update \
-#   && apt install -yq xfonts-base xfonts-75dpi \
-#   && dpkg -i /opt/sources/wkhtmltox.deb
+ADD https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.focal_amd64.deb \
+  /opt/sources/wkhtmltox.deb
+RUN apt update && apt install -yq xfonts-base xfonts-75dpi libxext6
+RUN dpkg -i /opt/sources/wkhtmltox.deb
 
 # Install postgresql-client
 RUN apt update && apt install -yq lsb-release
